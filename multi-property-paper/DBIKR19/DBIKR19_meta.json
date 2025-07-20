@@ -1,0 +1,940 @@
+{
+  "table_of_contents": [
+    {
+      "title": "Boosting Verification Scalability via Structural Grouping and\nSemantic Partitioning of Properties",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          54.5361328125,
+          53.23516845703125
+        ],
+        [
+          557.015625,
+          53.23516845703125
+        ],
+        [
+          557.015625,
+          97.0704345703125
+        ],
+        [
+          54.5361328125,
+          97.0704345703125
+        ]
+      ]
+    },
+    {
+      "title": "I. INTRODUCTION",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          134.9208984375,
+          357.95263671875
+        ],
+        [
+          213.37176513671875,
+          357.95263671875
+        ],
+        [
+          213.37176513671875,
+          367.9152526855469
+        ],
+        [
+          134.9208984375,
+          367.9152526855469
+        ]
+      ]
+    },
+    {
+      "title": "A. Related Work",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          310.78125,
+          597.8447875976562
+        ],
+        [
+          380.1222229003906,
+          597.8447875976562
+        ],
+        [
+          380.1222229003906,
+          607.8073883056641
+        ],
+        [
+          310.78125,
+          607.8073883056641
+        ]
+      ]
+    },
+    {
+      "title": "II. PRELIMINARIES",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          132.2314453125,
+          273.48980712890625
+        ],
+        [
+          216.00576782226562,
+          273.48980712890625
+        ],
+        [
+          216.00576782226562,
+          283.46484375
+        ],
+        [
+          132.2314453125,
+          283.46484375
+        ]
+      ]
+    },
+    {
+      "title": "A. Definitions",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          47.8125,
+          288.6811828613281
+        ],
+        [
+          106.24898529052734,
+          288.6811828613281
+        ],
+        [
+          106.24898529052734,
+          298.6437683105469
+        ],
+        [
+          47.8125,
+          298.6437683105469
+        ]
+      ]
+    },
+    {
+      "title": "B. Cone-of-Influence Computation",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          47.88720703125,
+          621.7769927978516
+        ],
+        [
+          189.97471618652344,
+          621.7769927978516
+        ],
+        [
+          189.97471618652344,
+          631.7395935058594
+        ],
+        [
+          47.88720703125,
+          631.7395935058594
+        ]
+      ]
+    },
+    {
+      "title": "C. Property Affinity",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          310.78125,
+          423.0670166015625
+        ],
+        [
+          393.85546875,
+          423.0670166015625
+        ],
+        [
+          393.85546875,
+          433.02960205078125
+        ],
+        [
+          310.78125,
+          433.02960205078125
+        ]
+      ]
+    },
+    {
+      "title": "D. Group Center and Grouping Quality",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          311.97808837890625,
+          609.1910095214844
+        ],
+        [
+          476.40081787109375,
+          609.1910095214844
+        ],
+        [
+          476.40081787109375,
+          619.1536102294922
+        ],
+        [
+          311.97808837890625,
+          619.1536102294922
+        ]
+      ]
+    },
+    {
+      "title": "E. Localization Abstraction",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          47.73779296875,
+          252.4830322265625
+        ],
+        [
+          162.178955078125,
+          252.4830322265625
+        ],
+        [
+          162.178955078125,
+          262.44561767578125
+        ],
+        [
+          47.73779296875,
+          262.44561767578125
+        ]
+      ]
+    },
+    {
+      "title": "III. STRUCTURAL GROUPING OF PROPERTIES",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          77.52798461914062,
+          442.3265075683594
+        ],
+        [
+          271.634765625,
+          442.3265075683594
+        ],
+        [
+          271.634765625,
+          452.28912353515625
+        ],
+        [
+          77.52798461914062,
+          452.28912353515625
+        ]
+      ]
+    },
+    {
+      "title": "A. Level-1 Grouping \u2013 Identical COI",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          311.9765625,
+          279.1199951171875
+        ],
+        [
+          465.0632629394531,
+          279.1199951171875
+        ],
+        [
+          465.0632629394531,
+          289.08258056640625
+        ],
+        [
+          311.9765625,
+          289.08258056640625
+        ]
+      ]
+    },
+    {
+      "title": "B. Level-2 Grouping \u2013 Heavy-weight SCCs in COI",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          309.884765625,
+          681.0890045166016
+        ],
+        [
+          522.650390625,
+          681.0890045166016
+        ],
+        [
+          522.650390625,
+          691.0516052246094
+        ],
+        [
+          309.884765625,
+          691.0516052246094
+        ]
+      ]
+    },
+    {
+      "title": "C. Level-3 Grouping \u2013 Hamming distance",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          311.9765625,
+          430.41796875
+        ],
+        [
+          485.54638671875,
+          430.41796875
+        ],
+        [
+          485.54638671875,
+          440.6185302734375
+        ],
+        [
+          311.9765625,
+          440.6185302734375
+        ]
+      ]
+    },
+    {
+      "title": "IV. SEMANTIC REFINEMENT OF PROPERTY GROUPS",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          323.33203125,
+          643.88671875
+        ],
+        [
+          549.24609375,
+          643.88671875
+        ],
+        [
+          549.24609375,
+          654.1951293945312
+        ],
+        [
+          323.33203125,
+          654.1951293945312
+        ]
+      ]
+    },
+    {
+      "title": "A. Generating Support Bitvectors",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          48.2607421875,
+          512.7890625
+        ],
+        [
+          187.06640625,
+          512.7890625
+        ],
+        [
+          187.06640625,
+          523.4854431152344
+        ],
+        [
+          48.2607421875,
+          523.4854431152344
+        ]
+      ]
+    },
+    {
+      "title": "B. Group Partitioning",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          311.97802734375,
+          202.25390625
+        ],
+        [
+          402.5081481933594,
+          202.25390625
+        ],
+        [
+          402.5081481933594,
+          213.08203125
+        ],
+        [
+          311.97802734375,
+          213.08203125
+        ]
+      ]
+    },
+    {
+      "title": "V. EXPERIMENTAL RESULTS",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          376.28704833984375,
+          321.556640625
+        ],
+        [
+          498.7309265136719,
+          321.556640625
+        ],
+        [
+          498.7309265136719,
+          332.5902404785156
+        ],
+        [
+          376.28704833984375,
+          332.5902404785156
+        ]
+      ]
+    },
+    {
+      "title": "A. Benchmarks from HWMCC",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          311.97802734375,
+          417.65625
+        ],
+        [
+          437.783203125,
+          417.65625
+        ],
+        [
+          437.783203125,
+          428.6705017089844
+        ],
+        [
+          311.97802734375,
+          428.6705017089844
+        ]
+      ]
+    },
+    {
+      "title": "B. Proprietary Designs",
+      "heading_level": null,
+      "page_id": 7,
+      "polygon": [
+        [
+          47.625732421875,
+          669.7937622070312
+        ],
+        [
+          145.9775390625,
+          669.7937622070312
+        ],
+        [
+          145.9775390625,
+          679.7563629150391
+        ],
+        [
+          47.625732421875,
+          679.7563629150391
+        ]
+      ]
+    },
+    {
+      "title": "VI. CONCLUSIONS AND FUTURE WORK",
+      "heading_level": null,
+      "page_id": 7,
+      "polygon": [
+        [
+          349.62890625,
+          335.1016540527344
+        ],
+        [
+          522.965087890625,
+          335.1016540527344
+        ],
+        [
+          522.965087890625,
+          345.06427001953125
+        ],
+        [
+          349.62890625,
+          345.06427001953125
+        ]
+      ]
+    },
+    {
+      "title": "ACKNOWLEDGMENTS",
+      "heading_level": null,
+      "page_id": 8,
+      "polygon": [
+        [
+          127.1513671875,
+          51.2706298828125
+        ],
+        [
+          220.40904235839844,
+          51.2706298828125
+        ],
+        [
+          220.40904235839844,
+          61.23321533203125
+        ],
+        [
+          127.1513671875,
+          61.23321533203125
+        ]
+      ]
+    },
+    {
+      "title": "REFERENCES",
+      "heading_level": null,
+      "page_id": 8,
+      "polygon": [
+        [
+          146.59799194335938,
+          144.513671875
+        ],
+        [
+          202.39846801757812,
+          144.513671875
+        ],
+        [
+          202.39846801757812,
+          154.47625732421875
+        ],
+        [
+          146.59799194335938,
+          154.47625732421875
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          254
+        ],
+        [
+          "Line",
+          107
+        ],
+        [
+          "Text",
+          9
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "Reference",
+          3
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          582
+        ],
+        [
+          "Line",
+          112
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "SectionHeader",
+          5
+        ],
+        [
+          "TextInlineMath",
+          4
+        ],
+        [
+          "Equation",
+          3
+        ],
+        [
+          "Reference",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          557
+        ],
+        [
+          "Line",
+          111
+        ],
+        [
+          "Text",
+          9
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "Reference",
+          3
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Code",
+          1
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          796
+        ],
+        [
+          "Line",
+          117
+        ],
+        [
+          "TableCell",
+          19
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "Reference",
+          4
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "TextInlineMath",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          982
+        ],
+        [
+          "Line",
+          110
+        ],
+        [
+          "TextInlineMath",
+          6
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "ListItem",
+          3
+        ],
+        [
+          "Reference",
+          2
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          567
+        ],
+        [
+          "Line",
+          109
+        ],
+        [
+          "Text",
+          7
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "Reference",
+          4
+        ],
+        [
+          "Footnote",
+          2
+        ],
+        [
+          "Code",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    },
+    {
+      "page_id": 6,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          474
+        ],
+        [
+          "Line",
+          152
+        ],
+        [
+          "TableCell",
+          36
+        ],
+        [
+          "Reference",
+          10
+        ],
+        [
+          "Caption",
+          4
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "Figure",
+          3
+        ],
+        [
+          "FigureGroup",
+          3
+        ],
+        [
+          "TextInlineMath",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    },
+    {
+      "page_id": 7,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          342
+        ],
+        [
+          "TableCell",
+          206
+        ],
+        [
+          "Line",
+          118
+        ],
+        [
+          "Text",
+          7
+        ],
+        [
+          "Caption",
+          3
+        ],
+        [
+          "Table",
+          3
+        ],
+        [
+          "Reference",
+          3
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "TableGroup",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    },
+    {
+      "page_id": 8,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          388
+        ],
+        [
+          "Line",
+          122
+        ],
+        [
+          "ListItem",
+          31
+        ],
+        [
+          "Reference",
+          31
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "ListGroup",
+          2
+        ],
+        [
+          "Text",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/DBIKR19"
+}

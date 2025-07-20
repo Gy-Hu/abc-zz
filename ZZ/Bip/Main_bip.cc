@@ -1729,6 +1729,47 @@ int main(int argc, char** argv)
         Vec<Vec<uint> > clusters;
         clusterProperties(N, n_clusters, n_pivots, seq_depth, clusters);
 
+        // FMCAD-19: Output clustering results
+        Get_Pob(N, properties);
+        WriteLn "=== FMCAD-19 Property Clustering Results ===";
+        WriteLn "Total properties: %_", properties.size();
+        WriteLn "Number of clusters: %_", clusters.size();
+        WriteLn "Target clusters: %_", n_clusters;
+        WriteLn "Pivots used: %_", n_pivots;
+        WriteLn "Sequential depth: %_", seq_depth;
+        NewLine;
+
+        for (uint i = 0; i < clusters.size(); i++){
+            Write "Cluster %_: [", i;
+            for (uint j = 0; j < clusters[i].size(); j++){
+                if (j > 0) Write ", ";
+                Write "%_", clusters[i][j];
+            }
+            WriteLn "] (size: %_)", clusters[i].size();
+        }
+
+        // Output cluster quality analysis
+        if (clusters.size() > 0){
+            NewLine;
+            WriteLn "=== Cluster Quality Analysis ===";
+            uint total_props = 0;
+            uint singleton_clusters = 0;
+            uint largest_cluster = 0;
+
+            for (uint i = 0; i < clusters.size(); i++){
+                total_props += clusters[i].size();
+                if (clusters[i].size() == 1) singleton_clusters++;
+                if (clusters[i].size() > largest_cluster) largest_cluster = clusters[i].size();
+            }
+
+            WriteLn "Properties clustered: %_", total_props;
+            WriteLn "Singleton clusters: %_", singleton_clusters;
+            WriteLn "Largest cluster size: %_", largest_cluster;
+            if (clusters.size() > 0){
+                WriteLn "Average cluster size: %.2f", double(total_props) / double(clusters.size());
+            }
+        }
+
     }else if (cli.cmd == "saber"){
         uint target_enl = cli.get("k").int_val;
         uint n_flops    = cli.get("N").int_val;
