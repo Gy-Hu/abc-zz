@@ -66,16 +66,16 @@ void clusterProperties(NetlistRef N, double affinity_threshold, /*out*/Vec<Vec<u
 
     // Step 4: Level-2 grouping - heavy-weight SCCs (if applicable)
     WriteLn "Level-2: Grouping based on heavy-weight SCCs...";
-    groupingLevel2(N, bitvectors, clusters, affinity_threshold);
+    groupingLevel2(N, bitvectors, clusters, affinity_threshold, total_vars);
     WriteLn "Level-2: Reduced to %_ clusters", clusters.size();
 
     // Step 5: Level-3 grouping - Hamming distance based clustering
     WriteLn "Level-3: Grouping based on Hamming distance...";
-    groupingLevel3(bitvectors, clusters, affinity_threshold);
+    groupingLevel3(bitvectors, clusters, affinity_threshold, total_vars);
     WriteLn "Level-3: Final clustering completed with %_ clusters", clusters.size();
 
     // Step 6: Display quality metrics
-    displayClusterQualityMetrics(bitvectors, clusters);
+    displayClusterQualityMetrics(bitvectors, clusters, total_vars);
 }
 
 
@@ -196,31 +196,19 @@ void computeSupportBitvectors(NetlistRef N, /*out*/Vec<Vec<uint64> >& bitvectors
 
 //=================================================================================================
 // FMCAD-19: Affinity and distance computation (Section II.C - Property Affinity)
-// Implements Jaccard similarity coefficient: |A ∩ B| / |A ∪ B|
+// Implements affinity based on Hamming distance: 1 - (hamming_dist / total_vars)
 // This measures structural similarity between properties based on their COI overlap.
 
-double computeAffinity(const Vec<uint64>& bv1, const Vec<uint64>& bv2)
+double computeAffinity(const Vec<uint64>& bv1, const Vec<uint64>& bv2, uint total_vars)
 {
-    if (bv1.size() != bv2.size()) return 0.0;
+    if (total_vars == 0) return 1.0;
 
-    uint intersection = 0;
-    uint union_size = 0;
-
-    for (uint i = 0; i < bv1.size(); i++){
-        uint64 and_bits = bv1[i] & bv2[i];
-        uint64 or_bits = bv1[i] | bv2[i];
-
-        // Count set bits using builtin popcount
-        intersection += __builtin_popcountll(and_bits);
-        union_size += __builtin_popcountll(or_bits);
-    }
-
-    if (union_size == 0) return 1.0;  // Both empty
-    return double(intersection) / double(union_size);
+    uint h_dist = hammingDistance(bv1, bv2);
+    return 1.0 - (double(h_dist) / double(total_vars));
 }
 
 
-double computeClusterAffinity(const Vec<Vec<uint64> >& bitvectors, const Vec<uint>& cluster1, const Vec<uint>& cluster2)
+double computeClusterAffinity(const Vec<Vec<uint64> >& bitvectors, const Vec<uint>& cluster1, const Vec<uint>& cluster2, uint total_vars)
 {
     if (cluster1.size() == 0 || cluster2.size() == 0) return 0.0;
     if (bitvectors.size() == 0) return 0.0;
@@ -250,7 +238,7 @@ double computeClusterAffinity(const Vec<Vec<uint64> >& bitvectors, const Vec<uin
     }
     
     // Compute Jaccard similarity between the two union COIs
-    return computeAffinity(union1, union2);
+    return computeAffinity(union1, union2, total_vars);
 }
 
 
@@ -328,7 +316,7 @@ void groupingLevel1(const Vec<Vec<uint64> >& bitvectors, /*out*/Vec<Vec<uint> >&
 // Groups properties that share the same heavy-weight strongly connected components
 // This is a simplified implementation - full SCC analysis would require more complex netlist traversal
 
-void groupingLevel2(NetlistRef N, const Vec<Vec<uint64> >& bitvectors, /*out*/Vec<Vec<uint> >& groups, double affinity_threshold)
+void groupingLevel2(NetlistRef N, const Vec<Vec<uint64> >& bitvectors, /*out*/Vec<Vec<uint> >& groups, double affinity_threshold, uint total_vars)
 {
     // Simplified Level-2 grouping: merge groups with high structural affinity
     // In a full implementation, this would analyze SCCs in the netlist
@@ -344,7 +332,7 @@ void groupingLevel2(NetlistRef N, const Vec<Vec<uint64> >& bitvectors, /*out*/Ve
             for (uint j = i + 1; j < groups.size(); j++) {
                 if (groups[j].size() == 0) continue;
 
-                double affinity = computeClusterAffinity(bitvectors, groups[i], groups[j]);
+                double affinity = computeClusterAffinity(bitvectors, groups[i], groups[j], total_vars);
 
                 // Debug: Show affinity calculations for very small datasets only
                 if (groups.size() <= 10) {
@@ -386,7 +374,7 @@ void groupingLevel2(NetlistRef N, const Vec<Vec<uint64> >& bitvectors, /*out*/Ve
 // Groups properties based on Hamming distance between bitvectors
 // Uses configurable affinity threshold to determine when to merge groups
 
-void groupingLevel3(const Vec<Vec<uint64> >& bitvectors, /*out*/Vec<Vec<uint> >& groups, double affinity_threshold)
+void groupingLevel3(const Vec<Vec<uint64> >& bitvectors, /*out*/Vec<Vec<uint> >& groups, double affinity_threshold, uint total_vars)
 {
     // Similar to Level-2, but with more relaxed threshold for Hamming distance
     // The paper uses a more sophisticated algorithm with word-based clustering
@@ -402,7 +390,7 @@ void groupingLevel3(const Vec<Vec<uint64> >& bitvectors, /*out*/Vec<Vec<uint> >&
             for (uint j = i + 1; j < groups.size(); j++) {
                 if (groups[j].size() == 0) continue;
 
-                double affinity = computeClusterAffinity(bitvectors, groups[i], groups[j]);
+                double affinity = computeClusterAffinity(bitvectors, groups[i], groups[j], total_vars);
                 // Use a slightly lower threshold for Level-3 to allow more grouping
                 if (affinity >= affinity_threshold * 0.8) {
                     // Merge groups with reasonable affinity
@@ -435,7 +423,7 @@ void groupingLevel3(const Vec<Vec<uint64> >& bitvectors, /*out*/Vec<Vec<uint> >&
 
 // FMCAD-19: Cluster quality analysis (Section V - Experimental Results)
 // Computes intra-cluster and inter-cluster similarity metrics to evaluate clustering quality
-void displayClusterQualityMetrics(const Vec<Vec<uint64> >& bitvectors, const Vec<Vec<uint> >& clusters)
+void displayClusterQualityMetrics(const Vec<Vec<uint64> >& bitvectors, const Vec<Vec<uint> >& clusters, uint total_vars)
 {
     WriteLn "=== Cluster Quality Analysis ===";
 
@@ -451,7 +439,7 @@ void displayClusterQualityMetrics(const Vec<Vec<uint64> >& bitvectors, const Vec
 
         for (uint i = 0; i < clusters[c].size(); i++) {
             for (uint j = i + 1; j < clusters[c].size(); j++) {
-                double affinity = computeAffinity(bitvectors[clusters[c][i]], bitvectors[clusters[c][j]]);
+                double affinity = computeAffinity(bitvectors[clusters[c][i]], bitvectors[clusters[c][j]], total_vars);
                 cluster_similarity += affinity;
                 cluster_pairs++;
             }
@@ -479,7 +467,7 @@ void displayClusterQualityMetrics(const Vec<Vec<uint64> >& bitvectors, const Vec
             if (clusters[j].size() == 0) continue;
 
             // Use cluster representatives for efficiency
-            double affinity = computeClusterAffinity(bitvectors, clusters[i], clusters[j]);
+            double affinity = computeClusterAffinity(bitvectors, clusters[i], clusters[j], total_vars);
             total_inter_similarity += affinity;
             inter_pairs++;
         }
