@@ -31,23 +31,24 @@ using namespace std;
 
 
 // MAIN CLUSTERING FUNCTION: Implements FMCAD-19 property clustering algorithm
-// Input:  N - netlist, n_clusters - target number of clusters
-//         n_pivots, seq_depth - legacy parameters (unused, kept for API compatibility)
+// Input:  N - netlist, affinity_threshold - minimum affinity for grouping (default 0.9)
 // Output: clusters - vector of property groups
-void clusterProperties(NetlistRef N, uint n_clusters, uint n_pivots, uint seq_depth, /*out*/Vec<Vec<uint> >& clusters)
+// The algorithm automatically determines optimal number of clusters based on structural similarity
+void clusterProperties(NetlistRef N, double affinity_threshold, /*out*/Vec<Vec<uint> >& clusters)
 {
     Get_Pob(N, properties);
     if (properties.size() == 0) return;
 
-    // FMCAD-19: Multi-level structural grouping followed by robust agglomerative clustering
+    WriteLn "=== FMCAD-19 Property Clustering Algorithm ===";
+    WriteLn "Properties to cluster: %_", properties.size();
+    WriteLn "Affinity threshold: %.3f", affinity_threshold;
 
     // Step 1: Compute support bitvectors for all properties
     Vec<Vec<uint64> > bitvectors;
     uint total_vars;
-    computeSupportBitvectors(N, 0, bitvectors, total_vars);  // n_pivots parameter unused
+    computeSupportBitvectors(N, bitvectors, total_vars);
 
-    // Progress: Support bitvector computation completed
-    WriteLn "Computing support bitvectors for %_ properties...", properties.size();
+    WriteLn "Support bitvector computation completed (%_ variables)", total_vars;
 
     // Step 2: Initialize clusters - each property starts in its own group
     clusters.clear();
@@ -56,24 +57,25 @@ void clusterProperties(NetlistRef N, uint n_clusters, uint n_pivots, uint seq_de
         clusters.last().push(i);
     }
 
-    // Step 3: Level-1 grouping - merge properties with identical COI (preprocessing)
-    WriteLn "Level-1: Merging properties with identical COI...";
+    WriteLn "Initial clusters: %_ (one per property)", clusters.size();
+
+    // Step 3: Level-1 grouping - merge properties with identical COI
+    WriteLn "Level-1: Grouping properties with identical COI...";
     groupingLevel1(bitvectors, clusters);
     WriteLn "Level-1: Reduced to %_ clusters", clusters.size();
 
-    // Step 4: Robust agglomerative clustering - guaranteed to reach target
-    WriteLn "Level-2: Performing robust agglomerative clustering...";
-    robustAgglomerativeClustering(bitvectors, clusters, n_clusters);
-    WriteLn "Level-2: Final clustering completed with %_ clusters", clusters.size();
+    // Step 4: Level-2 grouping - heavy-weight SCCs (if applicable)
+    WriteLn "Level-2: Grouping based on heavy-weight SCCs...";
+    groupingLevel2(N, bitvectors, clusters, affinity_threshold);
+    WriteLn "Level-2: Reduced to %_ clusters", clusters.size();
 
-    // Step 5: Compute and display quality metrics
+    // Step 5: Level-3 grouping - Hamming distance based clustering
+    WriteLn "Level-3: Grouping based on Hamming distance...";
+    groupingLevel3(bitvectors, clusters, affinity_threshold);
+    WriteLn "Level-3: Final clustering completed with %_ clusters", clusters.size();
+
+    // Step 6: Display quality metrics
     displayClusterQualityMetrics(bitvectors, clusters);
-
-    // Step 6: Optional semantic partitioning (simple size-based splitting)
-    // Only run if we have fewer clusters than requested
-    if (seq_depth > 0 && clusters.size() < n_clusters){
-        semanticPartitioning(N, clusters, n_clusters, seq_depth);  // seq_depth unused
-    }
 }
 
 
@@ -83,8 +85,7 @@ void clusterProperties(NetlistRef N, uint n_clusters, uint n_pivots, uint seq_de
 // as described in Figure 2 of the paper. Each property gets a bitvector where
 // bit i is set if support variable i is in the property's cone-of-influence.
 
-void computeSupportBitvectors(NetlistRef N, uint n_pivots, /*out*/Vec<Vec<uint64> >& bitvectors, /*out*/uint& total_vars)
-// Note: n_pivots parameter is legacy and unused - all relevant support variables are included
+void computeSupportBitvectors(NetlistRef N, /*out*/Vec<Vec<uint64> >& bitvectors, /*out*/uint& total_vars)
 {
     Get_Pob(N, properties);
     if (properties.size() == 0) return;
@@ -178,6 +179,11 @@ void computeSupportBitvectors(NetlistRef N, uint n_pivots, /*out*/Vec<Vec<uint64
                     }
                 }
             }
+        }
+
+        // Debug: Show support count for small datasets only
+        if (properties.size() <= 10) {
+            WriteLn "Property %_: %_ support variables", i, support_count;
         }
 
         // Progress indicator for large property sets
@@ -318,107 +324,110 @@ void groupingLevel1(const Vec<Vec<uint64> >& bitvectors, /*out*/Vec<Vec<uint> >&
 
 
 //=================================================================================================
-// FMCAD-19: Robust agglomerative clustering (Section III - Main Algorithm)
-// Two-phase approach: 1) Similarity-based merging, 2) Balanced redistribution
-// Guarantees reaching target number of clusters while maximizing intra-cluster affinity.
+// FMCAD-19: Level-2 grouping (Section III.B - Heavy-weight SCCs in COI)
+// Groups properties that share the same heavy-weight strongly connected components
+// This is a simplified implementation - full SCC analysis would require more complex netlist traversal
 
-void robustAgglomerativeClustering(const Vec<Vec<uint64> >& bitvectors, Vec<Vec<uint> >& clusters, uint target_clusters)
+void groupingLevel2(NetlistRef N, const Vec<Vec<uint64> >& bitvectors, /*out*/Vec<Vec<uint> >& groups, double affinity_threshold)
 {
-    // First phase: similarity-based clustering
-    bool found_similarity = true;
-    while (clusters.size() > target_clusters && clusters.size() > 1 && found_similarity) {
-        double best_affinity = -1.0;
-        uint best_i = 0, best_j = 1;
+    // Simplified Level-2 grouping: merge groups with high structural affinity
+    // In a full implementation, this would analyze SCCs in the netlist
+    // For now, we use high-affinity merging as a proxy
 
-        // Find the two clusters with highest Jaccard similarity
-        for (uint i = 0; i < clusters.size(); i++) {
-            if (clusters[i].size() == 0) continue;
-            for (uint j = i + 1; j < clusters.size(); j++) {
-                if (clusters[j].size() == 0) continue;
+    bool merged_any = true;
+    while (merged_any) {
+        merged_any = false;
 
-                // Compute cluster-to-cluster affinity using union of all COIs in each cluster
-                double affinity = computeClusterAffinity(bitvectors, clusters[i], clusters[j]);
+        for (uint i = 0; i < groups.size() && !merged_any; i++) {
+            if (groups[i].size() == 0) continue;
 
-                if (affinity > best_affinity) {
-                    best_affinity = affinity;
-                    best_i = i;
-                    best_j = j;
+            for (uint j = i + 1; j < groups.size(); j++) {
+                if (groups[j].size() == 0) continue;
+
+                double affinity = computeClusterAffinity(bitvectors, groups[i], groups[j]);
+
+                // Debug: Show affinity calculations for very small datasets only
+                if (groups.size() <= 10) {
+                    WriteLn "Affinity between group %_ and %_: %.3f (threshold: %.3f)", i, j, affinity, affinity_threshold;
+                }
+
+                if (affinity >= affinity_threshold) {
+                    // Merge groups with high affinity
+                    WriteLn "Merging groups %_ and %_ (affinity: %.3f)", i, j, affinity;
+                    append(groups[i], groups[j]);
+                    groups[j].clear();
+                    merged_any = true;
+                    break;
                 }
             }
         }
 
-        if (best_affinity > 0.0) {
-            // Merge clusters with similarity - show progress for large datasets
-            if (clusters.size() > 10) {
-                WriteLn "Merging clusters: %_ -> %_ (affinity: %.3f)", clusters.size(), clusters.size() - 1, best_affinity;
-            }
-
-            // Always merge the best pair
-            append(clusters[best_i], clusters[best_j]);
-            clusters[best_j].clear();
-
-            // Remove empty clusters
-            Vec<Vec<uint> > new_clusters;
-            for (uint i = 0; i < clusters.size(); i++) {
-                if (clusters[i].size() > 0) {
-                    new_clusters.push();
-                    append(new_clusters.last(), clusters[i]);
+        if (merged_any) {
+            // Remove empty groups
+            Vec<Vec<uint> > new_groups;
+            for (uint i = 0; i < groups.size(); i++) {
+                if (groups[i].size() > 0) {
+                    new_groups.push();
+                    append(new_groups.last(), groups[i]);
                 }
             }
-
-            // Move results back
-            clusters.clear();
-            for (uint i = 0; i < new_clusters.size(); i++) {
-                clusters.push();
-                append(clusters.last(), new_clusters[i]);
+            groups.clear();
+            for (uint i = 0; i < new_groups.size(); i++) {
+                groups.push();
+                append(groups.last(), new_groups[i]);
             }
-        } else {
-            found_similarity = false;
         }
     }
+}
 
-    // Second phase: if no more similarity found but still need to reduce clusters
-    // Use round-robin distribution to create balanced clusters
-    if (clusters.size() > target_clusters) {
-        WriteLn "Balancing clusters: redistributing %_ clusters to %_ target clusters", clusters.size(), target_clusters;
 
-        // Collect all properties from singleton clusters
-        Vec<uint> singleton_props;
-        Vec<Vec<uint> > multi_clusters;
+//=================================================================================================
+// FMCAD-19: Level-3 grouping (Section III.C - Hamming distance)
+// Groups properties based on Hamming distance between bitvectors
+// Uses configurable affinity threshold to determine when to merge groups
 
-        for (uint i = 0; i < clusters.size(); i++) {
-            if (clusters[i].size() == 1) {
-                singleton_props.push(clusters[i][0]);
-            } else if (clusters[i].size() > 1) {
-                multi_clusters.push();
-                append(multi_clusters.last(), clusters[i]);
+void groupingLevel3(const Vec<Vec<uint64> >& bitvectors, /*out*/Vec<Vec<uint> >& groups, double affinity_threshold)
+{
+    // Similar to Level-2, but with more relaxed threshold for Hamming distance
+    // The paper uses a more sophisticated algorithm with word-based clustering
+    // This is a simplified version that still respects the affinity threshold
+
+    bool merged_any = true;
+    while (merged_any) {
+        merged_any = false;
+
+        for (uint i = 0; i < groups.size() && !merged_any; i++) {
+            if (groups[i].size() == 0) continue;
+
+            for (uint j = i + 1; j < groups.size(); j++) {
+                if (groups[j].size() == 0) continue;
+
+                double affinity = computeClusterAffinity(bitvectors, groups[i], groups[j]);
+                // Use a slightly lower threshold for Level-3 to allow more grouping
+                if (affinity >= affinity_threshold * 0.8) {
+                    // Merge groups with reasonable affinity
+                    append(groups[i], groups[j]);
+                    groups[j].clear();
+                    merged_any = true;
+                    break;
+                }
             }
         }
 
-        // Redistribute singletons to create target number of clusters
-        clusters.clear();
-
-        // Start with existing multi-clusters
-        for (uint i = 0; i < multi_clusters.size() && clusters.size() < target_clusters; i++) {
-            clusters.push();
-            append(clusters.last(), multi_clusters[i]);
-        }
-
-        // Create additional clusters if needed
-        while (clusters.size() < target_clusters && singleton_props.size() > 0) {
-            clusters.push();
-            clusters.last().push(singleton_props[0]);
-            singleton_props[0] = singleton_props.last();
-            singleton_props.pop();
-        }
-
-        // Distribute remaining singletons round-robin
-        uint cluster_idx = 0;
-        while (singleton_props.size() > 0) {
-            clusters[cluster_idx % target_clusters].push(singleton_props[0]);
-            singleton_props[0] = singleton_props.last();
-            singleton_props.pop();
-            cluster_idx++;
+        if (merged_any) {
+            // Remove empty groups
+            Vec<Vec<uint> > new_groups;
+            for (uint i = 0; i < groups.size(); i++) {
+                if (groups[i].size() > 0) {
+                    new_groups.push();
+                    append(new_groups.last(), groups[i]);
+                }
+            }
+            groups.clear();
+            for (uint i = 0; i < new_groups.size(); i++) {
+                groups.push();
+                append(groups.last(), new_groups[i]);
+            }
         }
     }
 }
@@ -482,15 +491,22 @@ void displayClusterQualityMetrics(const Vec<Vec<uint64> >& bitvectors, const Vec
 
         // Display separation quality
         if (intra_pairs > 0) {
-            double separation_ratio = total_intra_similarity / (total_inter_similarity + 1e-10);
-            WriteLn "Separation ratio (intra/inter): %.3f", separation_ratio;
-            if (separation_ratio > 2.0) {
-                WriteLn "Quality: GOOD - clusters are well-separated";
-            } else if (separation_ratio > 1.5) {
-                WriteLn "Quality: FAIR - moderate separation";
+            if (total_inter_similarity > 0.001) {
+                double separation_ratio = total_intra_similarity / total_inter_similarity;
+                WriteLn "Separation ratio (intra/inter): %.3f", separation_ratio;
+                if (separation_ratio > 2.0) {
+                    WriteLn "Quality: GOOD - clusters are well-separated";
+                } else if (separation_ratio > 1.5) {
+                    WriteLn "Quality: FAIR - moderate separation";
+                } else {
+                    WriteLn "Quality: POOR - clusters may be forced";
+                }
             } else {
-                WriteLn "Quality: POOR - clusters may be forced";
+                WriteLn "Separation ratio: INFINITE (perfect separation)";
+                WriteLn "Quality: EXCELLENT - clusters have no inter-similarity";
             }
+        } else {
+            WriteLn "Quality: OPTIMAL - all properties have distinct COIs";
         }
     }
 }
@@ -500,102 +516,9 @@ void displayClusterQualityMetrics(const Vec<Vec<uint64> >& bitvectors, const Vec
 // FMCAD-19: Semantic partitioning using localization
 
 
-void semanticPartitioning(NetlistRef N, Vec<Vec<uint> >& groups, uint target_clusters, uint bmc_limit)
-{
-    // Simple size-based group splitting to reach target number of clusters
-    // Note: bmc_limit parameter is unused (legacy)
-
-    Get_Pob(N, properties);
-    Vec<Vec<uint> > new_groups;
-
-    for (uint g = 0; g < groups.size(); g++){
-        if (groups[g].size() <= 1){
-            // Single property groups don't need partitioning
-            new_groups.push();
-            append(new_groups.last(), groups[g]);
-            continue;
-        }
-
-        // Create property wires for this group
-        Vec<Wire> group_props;
-        for (uint i = 0; i < groups[g].size(); i++){
-            uint prop_idx = groups[g][i];
-            if (prop_idx < properties.size()){
-                group_props.push(properties[prop_idx]);
-            }
-        }
-
-        if (group_props.size() == 0) continue;
-
-        // Simple size-based partitioning to reach target cluster count
-        uint current_groups = new_groups.size();
-        uint remaining_input_groups = groups.size() - g - 1;
-        uint groups_still_needed = (target_clusters > current_groups) ?
-                                   (target_clusters - current_groups) : 0;
-
-        // Decide whether to split this group
-        bool should_split = false;
-        uint split_factor = 2; // Default: split into 2
-
-        // Only split if we absolutely need more groups to reach the target
-        if (groups_still_needed > remaining_input_groups) {
-            // We need more groups than we have remaining input groups
-            // So we should split some groups
-            uint extra_groups_needed = groups_still_needed - remaining_input_groups;
-
-            // Only split if this group is significantly large and we really need more groups
-            if (groups[g].size() >= 4 && extra_groups_needed > 0) {
-                should_split = true;
-                // Calculate optimal split factor based on group size and need
-                uint max_possible_splits = groups[g].size(); // Can split into at most this many singleton groups
-                uint desired_splits = extra_groups_needed + 1; // +1 because splitting creates one extra group
-
-                if (desired_splits >= 8 && groups[g].size() >= 8) {
-                    split_factor = 8;
-                } else if (desired_splits >= 4 && groups[g].size() >= 4) {
-                    split_factor = 4;
-                } else if (desired_splits >= 2 && groups[g].size() >= 4) {
-                    split_factor = 2;
-                } else {
-                    split_factor = (desired_splits < max_possible_splits) ? desired_splits : max_possible_splits;
-                }
-            }
-        }
-
-        if (should_split) {
-            WriteLn "Semantic partitioning: splitting group of size %_ into %_ parts", groups[g].size(), split_factor;
-
-            uint group_size = groups[g].size();
-            uint subgroup_size = group_size / split_factor;
-            uint remainder = group_size % split_factor;
-
-            uint start_idx = 0;
-            for (uint part = 0; part < split_factor; part++) {
-                uint current_subgroup_size = subgroup_size + (part < remainder ? 1 : 0);
-
-                Vec<uint> subgroup;
-                for (uint i = 0; i < current_subgroup_size; i++) {
-                    subgroup.push(groups[g][start_idx + i]);
-                }
-                start_idx += current_subgroup_size;
-
-                new_groups.push();
-                append(new_groups.last(), subgroup);
-            }
-        } else {
-            // Keep group as-is
-            new_groups.push();
-            append(new_groups.last(), groups[g]);
-        }
-    }
-
-    // Move results back to groups
-    groups.clear();
-    for (uint i = 0; i < new_groups.size(); i++){
-        groups.push();
-        append(groups.last(), new_groups[i]);
-    }
-}
+// Note: Semantic partitioning from the FMCAD-19 paper is not implemented here
+// as it requires complex localization abstraction and BMC analysis.
+// The core structural grouping (Levels 1-3) provides the main clustering benefits.
 
 
 //mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm

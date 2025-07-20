@@ -1057,12 +1057,10 @@ int main(int argc, char** argv)
     cli_simp_invar.add("fast" , "bool"  , "no"        , "In fast mode, only whole clauses are considered for removal.");
     cli.addCommand("simp-invar", "Simplify an invariant", &cli_simp_invar);
 
-    // Command line -- simp-invar:
+    // Command line -- cluster:
     CLI cli_cluster;
-    cli_cluster.add("n",      "int[1:]", "4",   "Number of clusters to partition properties into.");
-    cli_cluster.add("pivots", "int[1:]", "256", "Legacy parameter (unused, kept for compatibility).");
-    cli_cluster.add("seq",    "int[1:]", "5",   "Legacy parameter (unused, kept for compatibility).");
-    cli.addCommand("cluster", "Cluster properties according to support.", &cli_cluster);
+    cli_cluster.add("threshold", "float[0.0:1.0]", "0.9", "Affinity threshold for grouping properties (0.0-1.0).");
+    cli.addCommand("cluster", "Cluster properties using FMCAD-19 algorithm based on structural similarity.", &cli_cluster);
 
     // Command line -- miscellaneous:
     CLI cli_save_gig;
@@ -1723,20 +1721,16 @@ int main(int argc, char** argv)
         simpInvariant(N, props, invar, output, fast);
 
     }else if (cli.cmd == "cluster"){
-        uint n_clusters = cli.get("n").int_val;
-        uint n_pivots   = cli.get("pivots").int_val;
-        uint seq_depth  = cli.get("seq").int_val;
+        double affinity_threshold = cli.get("threshold").float_val;
         Vec<Vec<uint> > clusters;
-        clusterProperties(N, n_clusters, n_pivots, seq_depth, clusters);
+        clusterProperties(N, affinity_threshold, clusters);
 
-        // FMCAD-19: Output clustering results
+        // Output clustering results
         Get_Pob(N, properties);
         WriteLn "=== FMCAD-19 Property Clustering Results ===";
         WriteLn "Total properties: %_", properties.size();
         WriteLn "Number of clusters: %_", clusters.size();
-        // WriteLn "Target clusters: %_", n_clusters;
-        // WriteLn "Pivots used: %_", n_pivots;
-        // WriteLn "Sequential depth: %_", seq_depth;
+        WriteLn "Affinity threshold: %.3f", affinity_threshold;
         NewLine;
 
         for (uint i = 0; i < clusters.size(); i++){

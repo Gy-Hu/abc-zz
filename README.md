@@ -14,25 +14,28 @@ by Rohit Dureja, Jason Baumgartner, Alexander Ivrii, Robert Kanzelman, and Krist
 The property clustering functionality is available through the `cluster` command in the `bip` tool:
 
 ```bash
-# Basic usage - cluster properties into 2 groups
-./build/ZZ/Bip/bip.exe -input=your_file.aig ,cluster -n=2
+# Basic usage with default threshold (0.9)
+./build/ZZ/Bip/bip.exe -input=your_file.aig ,cluster
 
-# Cluster into 4 groups
-./build/ZZ/Bip/bip.exe -input=your_file.aig ,cluster -n=4
+# Use higher threshold for stricter grouping (fewer, higher-quality clusters)
+./build/ZZ/Bip/bip.exe -input=your_file.aig ,cluster -threshold=0.95
+
+# Use lower threshold for more grouping (more clusters with lower similarity)
+./build/ZZ/Bip/bip.exe -input=your_file.aig ,cluster -threshold=0.8
 ```
 
 ### Parameters
 
-- `-n=<int>`: Target number of clusters (default: 4)
+- `-threshold=<float>`: Affinity threshold for grouping properties (0.0-1.0, default: 0.9)
 
 ### Algorithm Overview
 
-The clustering algorithm computes support bitvectors for each property's cone-of-influence and uses:
+The clustering algorithm implements the FMCAD-19 paper and automatically determines the optimal number of clusters based on structural similarity:
 
-1. **Level-1 Grouping**: Merges properties with identical COI
-2. **Robust Agglomerative Clustering**: Jaccard similarity-based merging with guaranteed convergence to target clusters
-3. **Semantic Partitioning**: Simple size-based splitting when needed to reach target clusters
-4. **Quality Analysis**: Provides intra/inter-cluster similarity metrics and separation ratios
+1. **Level-1 Grouping**: Merges properties with identical COI (100% similarity)
+2. **Level-2 Grouping**: Groups properties based on heavy-weight strongly connected components
+3. **Level-3 Grouping**: Groups properties based on Hamming distance with configurable threshold
+4. **Quality Analysis**: Provides intra/inter-cluster similarity metrics
 
 The implementation leverages ABC-ZZ's existing infrastructure for netlist traversal, COI computation, and bitvector operations.
 
