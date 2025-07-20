@@ -15,7 +15,7 @@ The property clustering functionality is available through the `cluster` command
 
 ```bash
 # Basic usage with default threshold (0.9)
-./build/ZZ/Bip/bip.exe -input=your_file.aig ,cluster
+./build/ZZ/Bip/bip.exe -input=your_file.aig ,cluster # Recommanded to try ./ZZ/Bip/bip.exe -input=xxx/hwmcc13/multi/6s281.aig ,cluster -threshold=0.2 
 
 # Use higher threshold for stricter grouping (fewer, higher-quality clusters)
 ./build/ZZ/Bip/bip.exe -input=your_file.aig ,cluster -threshold=0.95
