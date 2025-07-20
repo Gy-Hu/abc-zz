@@ -13,16 +13,21 @@ using namespace std;
 void clusterProperties(NetlistRef N, uint n_clusters, uint n_pivots, uint seq_depth, /*out*/Vec<Vec<uint> >& clusters);
 
 // FMCAD-19: Support bitvector and affinity computation functions
-void computeSupportBitvectors(NetlistRef N, uint n_pivots, /*out*/Vec<Vec<uint64> >& bitvectors);
+void computeSupportBitvectors(NetlistRef N, uint n_pivots, /*out*/Vec<Vec<uint64> >& bitvectors, /*out*/uint& total_vars);
 double computeAffinity(const Vec<uint64>& bv1, const Vec<uint64>& bv2);
+double computeClusterAffinity(const Vec<Vec<uint64> >& bitvectors, const Vec<uint>& cluster1, const Vec<uint>& cluster2);
 uint hammingDistance(const Vec<uint64>& bv1, const Vec<uint64>& bv2);
 
 // FMCAD-19: Three-level grouping algorithms from the paper
 void groupingLevel1(const Vec<Vec<uint64> >& bitvectors, /*out*/Vec<Vec<uint> >& groups);
 void groupingLevel2(NetlistRef N, const Vec<Vec<uint64> >& bitvectors, Vec<Vec<uint> >& groups, double threshold);
-void groupingLevel3(const Vec<Vec<uint64> >& bitvectors, Vec<Vec<uint> >& groups, double threshold);
+void groupingLevel3(const Vec<Vec<uint64> >& bitvectors, Vec<Vec<uint> >& groups, double threshold, uint actual_bits);
 
-// FMCAD-19: Helper functions for grouping
+// FMCAD-19: Robust agglomerative clustering
+void robustAgglomerativeClustering(const Vec<Vec<uint64> >& bitvectors, Vec<Vec<uint> >& clusters, uint target_clusters);
+void displayClusterQualityMetrics(const Vec<Vec<uint64> >& bitvectors, const Vec<Vec<uint> >& clusters);
+
+// FMCAD-19: Helper functions for grouping (legacy)
 void mergeClosestGroups(const Vec<Vec<uint64> >& bitvectors, Vec<Vec<uint> >& groups);
 double computeClusterQuality(const Vec<Vec<uint64> >& bitvectors, const Vec<uint>& group);
 
