@@ -57,7 +57,7 @@ After clustering, you can verify each group separately using the `-prop` paramet
 
 The ZZ framework uses CMake to build the system.
 
-### Quick Build (Recommended)
+### Quick Build
 
 ```bash
 # Create build directory and configure

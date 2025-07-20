@@ -1734,9 +1734,9 @@ int main(int argc, char** argv)
         WriteLn "=== FMCAD-19 Property Clustering Results ===";
         WriteLn "Total properties: %_", properties.size();
         WriteLn "Number of clusters: %_", clusters.size();
-        WriteLn "Target clusters: %_", n_clusters;
-        WriteLn "Pivots used: %_", n_pivots;
-        WriteLn "Sequential depth: %_", seq_depth;
+        // WriteLn "Target clusters: %_", n_clusters;
+        // WriteLn "Pivots used: %_", n_pivots;
+        // WriteLn "Sequential depth: %_", seq_depth;
         NewLine;
 
         for (uint i = 0; i < clusters.size(); i++){
