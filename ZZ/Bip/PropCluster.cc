@@ -31,8 +31,8 @@ using namespace std;
 
 
 // MAIN CLUSTERING FUNCTION: Implements FMCAD-19 property clustering algorithm
-// Input:  N - netlist, n_clusters - target number of clusters, seq_depth - for semantic partitioning
-//         n_pivots - legacy parameter (unused, kept for API compatibility)
+// Input:  N - netlist, n_clusters - target number of clusters
+//         n_pivots, seq_depth - legacy parameters (unused, kept for API compatibility)
 // Output: clusters - vector of property groups
 void clusterProperties(NetlistRef N, uint n_clusters, uint n_pivots, uint seq_depth, /*out*/Vec<Vec<uint> >& clusters)
 {
@@ -69,10 +69,10 @@ void clusterProperties(NetlistRef N, uint n_clusters, uint n_pivots, uint seq_de
     // Step 5: Compute and display quality metrics
     displayClusterQualityMetrics(bitvectors, clusters);
 
-    // Step 6: Optional semantic partitioning using localization
-    // Only run semantic partitioning if we have fewer clusters than requested
+    // Step 6: Optional semantic partitioning (simple size-based splitting)
+    // Only run if we have fewer clusters than requested
     if (seq_depth > 0 && clusters.size() < n_clusters){
-        semanticPartitioning(N, clusters, n_clusters, seq_depth);
+        semanticPartitioning(N, clusters, n_clusters, seq_depth);  // seq_depth unused
     }
 }
 
@@ -502,8 +502,8 @@ void displayClusterQualityMetrics(const Vec<Vec<uint64> >& bitvectors, const Vec
 
 void semanticPartitioning(NetlistRef N, Vec<Vec<uint> >& groups, uint target_clusters, uint bmc_limit)
 {
-    // This implements the semantic partitioning algorithm from the paper
-    // using the existing localization infrastructure in abc-zz
+    // Simple size-based group splitting to reach target number of clusters
+    // Note: bmc_limit parameter is unused (legacy)
 
     Get_Pob(N, properties);
     Vec<Vec<uint> > new_groups;
@@ -527,11 +527,7 @@ void semanticPartitioning(NetlistRef N, Vec<Vec<uint> >& groups, uint target_clu
 
         if (group_props.size() == 0) continue;
 
-        // Try localization-based partitioning
-        // For now, implement a simplified version that uses BMC convergence
-        // A full implementation would integrate with the localization framework
-
-        // FMCAD-19: Intelligent semantic partitioning
+        // Simple size-based partitioning to reach target cluster count
         uint current_groups = new_groups.size();
         uint remaining_input_groups = groups.size() - g - 1;
         uint groups_still_needed = (target_clusters > current_groups) ?

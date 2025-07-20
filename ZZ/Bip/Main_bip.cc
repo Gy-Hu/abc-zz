@@ -1060,8 +1060,8 @@ int main(int argc, char** argv)
     // Command line -- simp-invar:
     CLI cli_cluster;
     cli_cluster.add("n",      "int[1:]", "4",   "Number of clusters to partition properties into.");
-    cli_cluster.add("pivots", "int[1:]", "256", "Number of state variables to track in support computation.");
-    cli_cluster.add("seq",    "int[1:]", "5",   "Sequential depth of support analysis.");
+    cli_cluster.add("pivots", "int[1:]", "256", "Legacy parameter (unused, kept for compatibility).");
+    cli_cluster.add("seq",    "int[1:]", "5",   "Legacy parameter (unused, kept for compatibility).");
     cli.addCommand("cluster", "Cluster properties according to support.", &cli_cluster);
 
     // Command line -- miscellaneous:
