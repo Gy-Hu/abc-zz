@@ -27,7 +27,7 @@ void mergeClosestGroups(const Vec<Vec<uint64> >& bitvectors, Vec<Vec<uint> >& gr
 double computeClusterQuality(const Vec<Vec<uint64> >& bitvectors, const Vec<uint>& group);
 
 // FMCAD-19: Semantic partitioning using localization
-void semanticPartitioning(NetlistRef N, Vec<Vec<uint> >& groups, uint bmc_limit);
+void semanticPartitioning(NetlistRef N, Vec<Vec<uint> >& groups, uint target_clusters, uint bmc_limit);
 
 
 //mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm

@@ -76,13 +76,20 @@ void clusterProperties(NetlistRef N, uint n_clusters, uint n_pivots, uint seq_de
     groupingLevel3(bitvectors, clusters, 0.8);
 
     // Step 6: If target number of clusters specified, merge until we reach it
+    WriteLn "DEBUG: After Level-3, we have %_ clusters, target is %_", clusters.size(), n_clusters;
     while (clusters.size() > n_clusters && clusters.size() > 1){
+        uint old_size = clusters.size();
         mergeClosestGroups(bitvectors, clusters);
+        WriteLn "DEBUG: Merged from %_ to %_ clusters", old_size, clusters.size();
+        if (clusters.size() == old_size) {
+            WriteLn "DEBUG: No more merging possible - all remaining groups have zero affinity";
+            break;
+        }
     }
 
     // Step 7: Optional semantic partitioning using localization
     if (seq_depth > 0){
-        semanticPartitioning(N, clusters, seq_depth);
+        semanticPartitioning(N, clusters, n_clusters, seq_depth);
     }
 }
 
@@ -368,6 +375,14 @@ void mergeClosestGroups(const Vec<Vec<uint64> >& bitvectors, Vec<Vec<uint> >& gr
         }
     }
 
+    WriteLn "DEBUG: Best affinity found: %.4f between groups %_ and %_", best_affinity, best_i, best_j;
+
+    // Only merge if there's some affinity
+    if (best_affinity <= 0.0) {
+        WriteLn "DEBUG: No positive affinity found, stopping merge";
+        return;
+    }
+
     // Merge the two best groups
     append(groups[best_i], groups[best_j]);
     groups[best_j].clear();
@@ -412,7 +427,7 @@ double computeClusterQuality(const Vec<Vec<uint64> >& bitvectors, const Vec<uint
 // FMCAD-19: Semantic partitioning using localization
 
 
-void semanticPartitioning(NetlistRef N, Vec<Vec<uint> >& groups, uint bmc_limit)
+void semanticPartitioning(NetlistRef N, Vec<Vec<uint> >& groups, uint target_clusters, uint bmc_limit)
 {
     // This implements the semantic partitioning algorithm from the paper
     // using the existing localization infrastructure in abc-zz
@@ -443,23 +458,61 @@ void semanticPartitioning(NetlistRef N, Vec<Vec<uint> >& groups, uint bmc_limit)
         // For now, implement a simplified version that uses BMC convergence
         // A full implementation would integrate with the localization framework
 
-        // Simplified approach: if group is large, split it based on support similarity
-        if (groups[g].size() > 4){
-            // Split large groups into smaller subgroups
-            uint mid = groups[g].size() / 2;
+        // FMCAD-19: Intelligent semantic partitioning
+        uint current_groups = new_groups.size();
+        uint remaining_input_groups = groups.size() - g - 1;
+        uint groups_still_needed = (target_clusters > current_groups) ?
+                                   (target_clusters - current_groups) : 0;
 
-            Vec<uint> subgroup1, subgroup2;
-            for (uint i = 0; i < mid; i++)
-                subgroup1.push(groups[g][i]);
-            for (uint i = mid; i < groups[g].size(); i++)
-                subgroup2.push(groups[g][i]);
+        // Decide whether to split this group
+        bool should_split = false;
+        uint split_factor = 2; // Default: split into 2
 
-            new_groups.push();
-            append(new_groups.last(), subgroup1);
-            new_groups.push();
-            append(new_groups.last(), subgroup2);
+        if (groups_still_needed > remaining_input_groups) {
+            // We need more groups than we have remaining input groups
+            // So we should split some groups
+            uint extra_groups_needed = groups_still_needed - remaining_input_groups;
+
+            if (groups[g].size() >= 2 && extra_groups_needed > 0) {
+                should_split = true;
+                // Calculate optimal split factor based on group size and need
+                uint max_possible_splits = groups[g].size(); // Can split into at most this many singleton groups
+                uint desired_splits = extra_groups_needed + 1; // +1 because splitting creates one extra group
+
+                if (desired_splits >= 8 && groups[g].size() >= 8) {
+                    split_factor = 8;
+                } else if (desired_splits >= 4 && groups[g].size() >= 4) {
+                    split_factor = 4;
+                } else if (desired_splits >= 2 && groups[g].size() >= 2) {
+                    split_factor = 2;
+                } else {
+                    split_factor = (desired_splits < max_possible_splits) ? desired_splits : max_possible_splits;
+                }
+            }
+        }
+
+        if (should_split) {
+            WriteLn "DEBUG: Splitting group of size %_ into %_ parts", groups[g].size(), split_factor;
+
+            uint group_size = groups[g].size();
+            uint subgroup_size = group_size / split_factor;
+            uint remainder = group_size % split_factor;
+
+            uint start_idx = 0;
+            for (uint part = 0; part < split_factor; part++) {
+                uint current_subgroup_size = subgroup_size + (part < remainder ? 1 : 0);
+
+                Vec<uint> subgroup;
+                for (uint i = 0; i < current_subgroup_size; i++) {
+                    subgroup.push(groups[g][start_idx + i]);
+                }
+                start_idx += current_subgroup_size;
+
+                new_groups.push();
+                append(new_groups.last(), subgroup);
+            }
         } else {
-            // Keep small groups as-is
+            // Keep group as-is
             new_groups.push();
             append(new_groups.last(), groups[g]);
         }
