@@ -3,8 +3,6 @@ ABC-ZZ
 
 ABC-ZZ is a C++ framework for sequential synthesis and verification.
 
-![.github/workflows/build.yml](https://github.com/berkeley-abc/abc-zz/workflows/.github/workflows/build.yml/badge.svg)
-
 ## FMCAD-19 Property Clustering Feature
 
 This fork implements the three-level property grouping algorithm from the FMCAD 2019 paper:
@@ -119,42 +117,4 @@ Recommended:
 - GNU Readline developer header files and libraries (e.g. readline-dev on Ubuntu)
 - libpng developer header files and libraries (e.g. libpng12-dev on Ubuntu)
 
-
-## Windows
-
-Building on Windows is more complicated. The simplest way is to use `vcpkg` to gather the dependencies.
-
-### Vcpkg
-
-Clone the repository
-
-    git clone https://github.com/Microsoft/vcpkg
-
-Change into the `vcpkg` directory, and bootstrap
-
-    cd vcpkg
-    ./bootstrap-vcpkg.bat
-
-Install the relevant pacakges
-
-    ./vcpkg.exe install dirent:x64-windows-static-md zlib:x64-windows-static-md
-
-Create a build directory 
-
-    cd ../
-    mkdir build
-    cd build
-
-Configure
-
-    cmake \
-        -G "Visual Studio 15 2017 Win64" \
-        -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake \
-        -DVCPKG_TARGET_TRIPLET=x64-windows-static-md \
-        \
-        .. 
-
-Build
-
-    cmake --build .
 

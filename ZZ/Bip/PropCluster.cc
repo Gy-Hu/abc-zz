@@ -30,37 +30,9 @@ using namespace std;
 //mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
 
 
-// LEGACY FUNCTION: Select random flops as pivots (not used in FMCAD-19 algorithm)
-// This function is kept for compatibility but the main clustering algorithm
-// uses COI-based bitvector analysis instead of pivot-based approaches.
-void pickPivots(NetlistRef N, uint n_pivots, WMap<uint>& pivots)
-{
-    Vec<GLit> ffs;
-    For_Gatetype(N, gate_Flop, w)
-        ffs.push(w);
-
-#if 1
-    uint64 seed = DEFAULT_SEED;
-    while (ffs.size() > n_pivots){
-        uint r = irand(seed, ffs.size());
-        swp(ffs[r], ffs[LAST]);
-        ffs.pop();
-    }
-#else
-    if (ff.size() > n_pivots){
-        uint j = 0;
-        for (uint i = 0; < i
-    uint count =
-#endif
-
-    for (uint i = 0; i < ffs.size(); i++)
-        pivots(ffs[i] + N) = i+1;
-}
-
-
 // MAIN CLUSTERING FUNCTION: Implements FMCAD-19 property clustering algorithm
-// Input:  N - netlist, n_clusters - target number of clusters,
-//         n_pivots - legacy parameter (unused), seq_depth - for semantic partitioning
+// Input:  N - netlist, n_clusters - target number of clusters, seq_depth - for semantic partitioning
+//         n_pivots - legacy parameter (unused, kept for API compatibility)
 // Output: clusters - vector of property groups
 void clusterProperties(NetlistRef N, uint n_clusters, uint n_pivots, uint seq_depth, /*out*/Vec<Vec<uint> >& clusters)
 {
@@ -69,10 +41,10 @@ void clusterProperties(NetlistRef N, uint n_clusters, uint n_pivots, uint seq_de
 
     // FMCAD-19: Multi-level structural grouping followed by robust agglomerative clustering
 
-    // Step 1: Compute support bitvectors for all properties (without n_pivots limit)
+    // Step 1: Compute support bitvectors for all properties
     Vec<Vec<uint64> > bitvectors;
     uint total_vars;
-    computeSupportBitvectors(N, UINT_MAX, bitvectors, total_vars);  // Remove artificial limit
+    computeSupportBitvectors(N, 0, bitvectors, total_vars);  // n_pivots parameter unused
 
     // Progress: Support bitvector computation completed
     WriteLn "Computing support bitvectors for %_ properties...", properties.size();
@@ -112,6 +84,7 @@ void clusterProperties(NetlistRef N, uint n_clusters, uint n_pivots, uint seq_de
 // bit i is set if support variable i is in the property's cone-of-influence.
 
 void computeSupportBitvectors(NetlistRef N, uint n_pivots, /*out*/Vec<Vec<uint64> >& bitvectors, /*out*/uint& total_vars)
+// Note: n_pivots parameter is legacy and unused - all relevant support variables are included
 {
     Get_Pob(N, properties);
     if (properties.size() == 0) return;
@@ -149,7 +122,7 @@ void computeSupportBitvectors(NetlistRef N, uint n_pivots, /*out*/Vec<Vec<uint64
     Map<Wire, uint> var_to_index;
     uint index = 0;
     
-    // Map all relevant gates (remove artificial n_pivots limitation)
+    // Map all relevant gates
     uint gates_to_map = relevant_gates.size();
     
     for (uint i = 0; i < gates_to_map; i++){
@@ -344,92 +317,6 @@ void groupingLevel1(const Vec<Vec<uint64> >& bitvectors, /*out*/Vec<Vec<uint> >&
 }
 
 
-// LEGACY FUNCTION: Level-2 grouping based on SCC weights (Section III.B)
-// This is a simplified implementation. The full SCC-based approach from the paper
-// would analyze strongly connected components in the netlist graph.
-// Currently integrated into the robust agglomerative clustering phase.
-/*
-void groupingLevel2(NetlistRef N, const Vec<Vec<uint64> >& bitvectors, Vec<Vec<uint> >& groups, double threshold)
-{
-    // Simplified implementation - merges high-affinity groups
-    // Full SCC analysis would require Tarjan's algorithm on the netlist graph
-
-    Vec<Vec<uint> > new_groups;
-    Vec<bool> merged(groups.size(), false);
-
-    for (uint i = 0; i < groups.size(); i++){
-        if (merged[i] || groups[i].size() == 0) continue;
-
-        new_groups.push();
-        append(new_groups.last(), groups[i]);
-        merged[i] = true;
-
-        // Try to merge with other groups based on affinity threshold
-        for (uint j = i + 1; j < groups.size(); j++){
-            if (merged[j] || groups[j].size() == 0) continue;
-
-            uint prop_i = groups[i][0];
-            uint prop_j = groups[j][0];
-            double affinity = computeAffinity(bitvectors[prop_i], bitvectors[prop_j]);
-
-            if (affinity >= threshold){
-                append(new_groups.last(), groups[j]);
-                merged[j] = true;
-            }
-        }
-    }
-
-    groups.clear();
-    for (uint i = 0; i < new_groups.size(); i++){
-        groups.push();
-        append(groups.last(), new_groups[i]);
-    }
-}
-*/
-
-
-// LEGACY FUNCTION: Level-3 grouping based on Hamming distance (Section III.C)
-// This implements the approximate clustering algorithm from Figure 6-7 in the paper.
-// Currently integrated into the robust agglomerative clustering for better performance.
-/*
-void groupingLevel3(const Vec<Vec<uint64> >& bitvectors, Vec<Vec<uint> >& groups, double threshold, uint actual_bits)
-{
-    Vec<Vec<uint> > new_groups;
-    Vec<bool> merged(groups.size(), false);
-
-    for (uint i = 0; i < groups.size(); i++){
-        if (merged[i] || groups[i].size() == 0) continue;
-
-        new_groups.push();
-        append(new_groups.last(), groups[i]);
-        merged[i] = true;
-
-        // Merge based on normalized Hamming distance threshold
-        for (uint j = i + 1; j < groups.size(); j++){
-            if (merged[j] || groups[j].size() == 0) continue;
-
-            uint prop_i = groups[i][0];
-            uint prop_j = groups[j][0];
-            uint distance = hammingDistance(bitvectors[prop_i], bitvectors[prop_j]);
-            double normalized_distance = double(distance) / double(actual_bits);
-            double affinity = 1.0 - normalized_distance;
-
-            if (affinity >= threshold){
-                append(new_groups.last(), groups[j]);
-                merged[j] = true;
-            }
-        }
-    }
-
-    groups.clear();
-    for (uint i = 0; i < new_groups.size(); i++){
-        groups.push();
-        append(groups.last(), new_groups[i]);
-    }
-}
-*/
-
-
 //=================================================================================================
 // FMCAD-19: Robust agglomerative clustering (Section III - Main Algorithm)
 // Two-phase approach: 1) Similarity-based merging, 2) Balanced redistribution
@@ -606,80 +493,6 @@ void displayClusterQualityMetrics(const Vec<Vec<uint64> >& bitvectors, const Vec
             }
         }
     }
-}
-
-
-//=================================================================================================
-// FMCAD-19: Helper functions (legacy)
-
-
-void mergeClosestGroups(const Vec<Vec<uint64> >& bitvectors, Vec<Vec<uint> >& groups)
-{
-    if (groups.size() <= 1) return;
-
-    double best_affinity = -1.0;
-    uint best_i = 0, best_j = 1;
-
-    // Find the two groups with highest affinity
-    for (uint i = 0; i < groups.size(); i++){
-        if (groups[i].size() == 0) continue;
-        for (uint j = i + 1; j < groups.size(); j++){
-            if (groups[j].size() == 0) continue;
-
-            uint prop_i = groups[i][0];
-            uint prop_j = groups[j][0];
-            double affinity = computeAffinity(bitvectors[prop_i], bitvectors[prop_j]);
-
-            if (affinity > best_affinity){
-                best_affinity = affinity;
-                best_i = i;
-                best_j = j;
-            }
-        }
-    }
-
-    // Only merge if there's some affinity
-    if (best_affinity <= 0.0) {
-        return;  // No positive affinity found, stopping merge
-    }
-
-    // Merge the two best groups
-    append(groups[best_i], groups[best_j]);
-    groups[best_j].clear();
-
-    // Remove empty groups
-    Vec<Vec<uint> > new_groups;
-    for (uint i = 0; i < groups.size(); i++){
-        if (groups[i].size() > 0){
-            new_groups.push();
-            append(new_groups.last(), groups[i]);
-        }
-    }
-
-    // Move results back to groups
-    groups.clear();
-    for (uint i = 0; i < new_groups.size(); i++){
-        groups.push();
-        append(groups.last(), new_groups[i]);
-    }
-}
-
-
-double computeClusterQuality(const Vec<Vec<uint64> >& bitvectors, const Vec<uint>& group)
-{
-    if (group.size() <= 1) return 1.0;
-
-    double total_affinity = 0.0;
-    uint count = 0;
-
-    for (uint i = 0; i < group.size(); i++){
-        for (uint j = i + 1; j < group.size(); j++){
-            total_affinity += computeAffinity(bitvectors[group[i]], bitvectors[group[j]]);
-            count++;
-        }
-    }
-
-    return count > 0 ? total_affinity / count : 1.0;
 }
 
 
